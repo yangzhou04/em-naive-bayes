@@ -79,49 +79,53 @@ class UnlabeledCorpus extends Corpus<ObjectHandler<CharSequence>> {
 public class EmNaiveBayes {
 
 	/**
-	 * 
+	 * Naive Baysian classifier
 	 */
 	private TradNaiveBayesClassifier mClassifier;
 	/**
-	 * 
+	 * Pseudo-count of Dirichlet prior for categories
 	 */
 	private final double CATEGORY_PRIOR;
 	/**
-	 * 
+	 * Pseudo-count of Dirichlet prior for words
 	 */
 	private final double TOKEN_PRIOR;
 	/**
-	 * 
+	 * To compensate for the effect of length. 
+	 * In effect, if length(feature) > N, this pulls the estimate p(c|ws)
+	 * closer to the category estimate p(c). If length(feature) < N, 
+	 * it has the opposite effect, and actually increases the 
+	 * attenuation.
 	 */
 	private final double LENGTH_NORM;
 	/**
-	 * 
+	 * Using text features that exceeding this count
 	 */
 	private final double MIN_TOKEN_COUNT;
 	/**
-	 * 
+	 * Minimum EM Improvment for continuing iteration
 	 */
 	private final double MIN_IMPROVMENT;
 	/**
-	 * 
+	 * Maximum iteration times
 	 */
 	private final int MAX_ITER;
 	
 	/**
-	 * 
+	 * Construction EM Naive Bayes using default parameters
 	 */
 	public EmNaiveBayes() {
 		this(1d, 1d, Double.NaN, 1, 1, 1000);
 	}
 	
 	/**
-	 * 
-	 * @param categoryPrior
-	 * @param tokenPrior
-	 * @param lengthNorm
-	 * @param minTokenCount
-	 * @param minImprovment
-	 * @param maxIterTimes
+	 * Construction EM Naive Bayes by assigning your parameters
+	 * @param categoryPrior Pseudo-count of Dirichlet prior for categories
+	 * @param tokenPrior Pseudo-count of Dirichlet prior for words
+	 * @param lengthNorm To compensate for the effect of length
+	 * @param minTokenCount Using text features that exceeding this count
+	 * @param minImprovment Minimum EM Improvment for continuing iteration
+	 * @param maxIterTimes Maximum iteration times
 	 */
 	public EmNaiveBayes(double categoryPrior, double tokenPrior, 
 			double lengthNorm, double minTokenCount, double minImprovment,
@@ -135,9 +139,9 @@ public class EmNaiveBayes {
 	}
 	
 	/**
-	 * 
-	 * @param X
-	 * @param y
+	 * Training or fitting the model
+	 * @param X List of text features separated by white space
+	 * @param y List of labels, length must be the same with X's
 	 */
 	public void fit(List<String> X, List<String> y) {
 		if (X.size() != y.size()) {
@@ -158,6 +162,7 @@ public class EmNaiveBayes {
 			}
 		}
 		LabeledCorpus labeledCorpus = new LabeledCorpus(labeledX, labeledy);
+		UnlabeledCorpus unlabeledCorpus = new UnlabeledCorpus(unlabeledX);
 		
 		// Initialize base classifier
 		final Set<String> CATEGORIES = new HashSet<String>(y);
@@ -168,9 +173,6 @@ public class EmNaiveBayes {
 
 		// Train initialize classifier
 		labeledCorpus.visitTrain(base);
-		
-		
-		UnlabeledCorpus unlabeledCorpus = new UnlabeledCorpus(unlabeledX);
 		
 		// EM iteration
 		Factory<TradNaiveBayesClassifier> factory = 
@@ -200,9 +202,9 @@ public class EmNaiveBayes {
 	}
 	
 	/**
-	 * 
-	 * @param x
-	 * @return
+	 * Predicting
+	 * @param x white space separated text features
+	 * @return Entry<String, Double>for (label, probability) pair
 	 */
 	public Entry<String, Double> predict(String x) {
 		JointClassification jc = mClassifier.classify(x);
